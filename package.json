@@ -22,9 +22,11 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
     "@tailwindcss/postcss": "^4",
+    "@types/adm-zip": "^0.5.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "adm-zip": "^0.5.16",
     "tailwindcss": "^4",
     "tsx": "^4.20.4",
     "typescript": "^5"
