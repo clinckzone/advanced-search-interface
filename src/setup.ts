@@ -113,16 +113,16 @@ async function processData(): Promise<void> {
 
     // Get some basic stats
     const db = processor.getDatabase().getDatabase();
-    const companyCount = db.prepare("SELECT COUNT(*) as count FROM companies").get() as any;
+    const companyCount = db.prepare("SELECT COUNT(*) as count FROM domains").get() as any;
     const techCount = db.prepare("SELECT COUNT(*) as count FROM technologies").get() as any;
     const relationshipCount = db
-      .prepare("SELECT COUNT(*) as count FROM company_technologies")
+      .prepare("SELECT COUNT(*) as count FROM domain_technologies")
       .get() as any;
 
     console.log("\n📊 Database Statistics:");
-    console.log(`   - Companies: ${companyCount.count}`);
+    console.log(`   - Domains: ${companyCount.count}`);
     console.log(`   - Technologies: ${techCount.count}`);
-    console.log(`   - Company-Technology Relationships: ${relationshipCount.count}`);
+    console.log(`   - Domain-Technology Relationships: ${relationshipCount.count}`);
 
     processor.close();
   } catch (error) {

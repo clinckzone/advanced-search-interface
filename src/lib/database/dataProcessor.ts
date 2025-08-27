@@ -3,7 +3,8 @@ import fs from "fs";
 import path from "path";
 import { DatabaseSchema } from "./schema";
 import parseJSON from "../utils/parseJSON";
-import convertStringToUTF8 from "../utils/convertStringToUtf8";
+import getEncodedString from "../utils/getEncodedString";
+import { ensureDomainExists, ensureTechnologyExists } from "./entityCreators";
 
 // Zod schemas for validation
 const MetaDataSchema = z.object({
@@ -79,13 +80,13 @@ export class DataProcessor {
       await this.processTechnologies(path.join(dataDir, "techIndex.sample.json"));
 
       // Process companies
-      await this.processCompanies(path.join(dataDir, "metaData.sample.json"));
+      await this.processDomains(path.join(dataDir, "metaData.sample.json"));
 
       // Process company-technology relationships
-      await this.processCompanyTechnologies(path.join(dataDir, "techData.sample.json"));
+      await this.processDomainTechnologies(path.join(dataDir, "techData.sample.json"));
 
       // Generate company statistics
-      await this.generateCompanyStats();
+      await this.generateDomainStats();
 
       console.log("Data processing completed successfully!");
     } catch (error) {
@@ -102,7 +103,7 @@ export class DataProcessor {
     }
 
     const buffer = fs.readFileSync(filePath);
-    const rawData = convertStringToUTF8(buffer);
+    const rawData = getEncodedString(buffer);
     const technologies: TechIndexItem[] = parseJSON(rawData);
 
     let processed = 0;
@@ -135,24 +136,24 @@ export class DataProcessor {
     console.log(`Processed ${processed} technologies`);
   }
 
-  private async processCompanies(filePath: string): Promise<void> {
-    console.log("Processing companies...");
+  private async processDomains(filePath: string): Promise<void> {
+    console.log("Processing domains...");
 
     if (!fs.existsSync(filePath)) {
-      throw new Error(`Company metadata file not found: ${filePath}`);
+      throw new Error(`Domain metadata file not found: ${filePath}`);
     }
 
     const buffer = fs.readFileSync(filePath);
-    const rawData = convertStringToUTF8(buffer);
-    const companies: MetaDataItem[] = parseJSON(rawData);
+    const rawData = getEncodedString(buffer);
+    const domains: MetaDataItem[] = parseJSON(rawData);
 
     let processed = 0;
-    const insertMany = this.dbSchema.getDatabase().transaction((comps: MetaDataItem[]) => {
-      for (const company of comps) {
+    const insertMany = this.dbSchema.getDatabase().transaction((domains: MetaDataItem[]) => {
+      for (const domain of domains) {
         try {
-          const validated = MetaDataSchema.parse(company);
+          const validated = MetaDataSchema.parse(domain);
 
-          this.statements.insertCompany.run(
+          this.statements.insertDomain.run(
             validated.D, // Domain
             validated.CN || null, // Company Name
             validated.CAT || null, // Category
@@ -167,24 +168,24 @@ export class DataProcessor {
           );
           processed++;
         } catch (error) {
-          console.warn("Skipping invalid company:", error);
+          console.warn("Skipping invalid domain:", error);
         }
       }
     });
 
-    insertMany(companies);
-    console.log(`Processed ${processed} companies`);
+    insertMany(domains);
+    console.log(`Processed ${processed} domains`);
   }
 
-  private async processCompanyTechnologies(filePath: string): Promise<void> {
-    console.log("Processing company-technology relationships...");
+  private async processDomainTechnologies(filePath: string): Promise<void> {
+    console.log("Processing domain-technology relationships...");
 
     if (!fs.existsSync(filePath)) {
       throw new Error(`Technology data file not found: ${filePath}`);
     }
 
     const buffer = fs.readFileSync(filePath);
-    const rawData = convertStringToUTF8(buffer);
+    const rawData = getEncodedString(buffer);
     const techData: TechDataItem[] = parseJSON(rawData);
 
     let processed = 0;
@@ -193,25 +194,19 @@ export class DataProcessor {
         try {
           const validated = TechDataSchema.parse(item);
 
-          // Get company ID
-          const company = this.statements.getCompanyByDomain.get(validated.D) as any;
-          if (!company) {
-            console.warn(`Company not found for domain: ${validated.D}`);
-            continue;
-          }
+          // Get domain ID, create if doesn't exist
+          const domain = ensureDomainExists(validated.D, this.statements);
 
           if (validated.T && validated.T.length > 0) {
             for (const tech of validated.T) {
-              // Get technology ID
-              const technology = this.statements.getTechnologyByName.get(tech.N) as any;
-              if (!technology) {
-                console.warn(`Technology not found: ${tech.N}`);
-                continue;
-              }
+              // Get technology ID, create if doesn't exist
+              const technology = ensureTechnologyExists(tech.N, this.statements);
 
-              this.statements.insertCompanyTechnology.run(
-                company.id,
+              this.statements.insertDomainTechnology.run(
+                domain.id,
+                domain.domain,
                 technology.id,
+                technology.name,
                 validated.SP || null, // spend
                 validated.SD || null, // subdomain
                 validated.FI ? new Date(validated.FI).toISOString() : null, // first_identified
@@ -229,61 +224,61 @@ export class DataProcessor {
     });
 
     insertMany(techData);
-    console.log(`Processed ${processed} company-technology relationships`);
+    console.log(`Processed ${processed} domain-technology relationships`);
   }
 
-  private async generateCompanyStats(): Promise<void> {
-    console.log("Generating company statistics...");
+  private async generateDomainStats(): Promise<void> {
+    console.log("Generating domain statistics...");
 
     const db = this.dbSchema.getDatabase();
 
-    // Get all companies with their technology counts
-    const companiesWithStats = db
+    // Get all domains with their technology counts
+    const domainsWithStats = db
       .prepare(
         `
       SELECT 
-        c.id,
-        c.domain,
-        COUNT(ct.technology_id) as total_technologies,
-        SUM(ct.spend) as total_spend
-      FROM companies c
-      LEFT JOIN company_technologies ct ON c.id = ct.company_id
-      GROUP BY c.id, c.domain
+        d.id,
+        d.domain,
+        COUNT(dt.technology_id) as total_technologies,
+        SUM(dt.spend) as total_spend
+      FROM domains d
+      LEFT JOIN domain_technologies dt ON d.id = dt.domain_id
+      GROUP BY d.id
     `
       )
       .all();
 
     const insertStats = this.dbSchema.getDatabase().transaction((stats: any[]) => {
-      for (const company of stats) {
-        // Get technologies by category for this company
+      for (const domain of stats) {
+        // Get technologies by category for this domain
         const techsByCategory = db
           .prepare(
             `
           SELECT t.category, COUNT(*) as count
-          FROM company_technologies ct
-          JOIN technologies t ON ct.technology_id = t.id
-          WHERE ct.company_id = ? AND t.category IS NOT NULL
+          FROM domain_technologies dt
+          JOIN technologies t ON dt.technology_id = t.id
+          WHERE dt.domain_id = ? AND t.category IS NOT NULL
           GROUP BY t.category
         `
           )
-          .all(company.id);
+          .all(domain.id);
 
         const categoryCounts: Record<string, number> = {};
         for (const cat of techsByCategory as any[]) {
           categoryCounts[cat.category] = cat.count;
         }
 
-        this.statements.insertCompanyStats.run(
-          company.id,
-          company.total_technologies || 0,
+        this.statements.insertDomainStats.run(
+          domain.id,
+          domain.total_technologies || 0,
           JSON.stringify(categoryCounts),
-          company.total_spend || 0
+          domain.total_spend || 0
         );
       }
     });
 
-    insertStats(companiesWithStats);
-    console.log(`Generated statistics for ${companiesWithStats.length} companies`);
+    insertStats(domainsWithStats);
+    console.log(`Generated statistics for ${domainsWithStats.length} domains`);
   }
 
   public close(): void {

@@ -1,4 +1,7 @@
-// A JSON parser that attempts to fix common syntax errors like trailing commas before parsing.
+/*
+ * A JSON parser that attempts to fix common syntax
+ * errors like trailing commas before parsing.
+ */
 function lenientJSONParse(jsonString: string) {
   try {
     return JSON.parse(jsonString);
@@ -9,8 +12,9 @@ function lenientJSONParse(jsonString: string) {
 }
 
 /**
- * Parses a string that could be either standard JSON or JSONL (newline-delimited JSON).
- * It uses a lenient parser to handle minor syntax errors.
+ * Parses a string that could be either standard
+ * JSON or JSONL (newline-delimited JSON). It uses
+ * a lenient parser to handle minor syntax errors.
  */
 function parseJSON(data: string) {
   try {

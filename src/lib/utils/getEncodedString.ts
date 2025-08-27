@@ -1,4 +1,7 @@
-function convertStringToUTF8(buffer: NonSharedBuffer) {
+/*
+ * Handles encoded strings that are utf-8, utf-16 LE/BE
+ */
+function getEncodedString(buffer: NonSharedBuffer) {
   let rawData;
 
   // UTF-16 LE
@@ -17,4 +20,4 @@ function convertStringToUTF8(buffer: NonSharedBuffer) {
   return rawData;
 }
 
-export default convertStringToUTF8;
+export default getEncodedString;
