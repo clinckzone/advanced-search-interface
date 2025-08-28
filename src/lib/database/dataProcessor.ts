@@ -1,4 +1,13 @@
-import { z } from "zod";
+import {
+  Domain,
+  MetaDataSchema,
+  TechDataSchema,
+  TechIndexSchema,
+  Technology,
+  type MetaDataItem,
+  type TechDataItem,
+  type TechIndexItem,
+} from "../types";
 import fs from "fs";
 import path from "path";
 import { DatabaseSchema } from "./schema";
@@ -6,61 +15,12 @@ import parseJSON from "../utils/parseJSON";
 import getEncodedString from "../utils/getEncodedString";
 import { ensureDomainExists, ensureTechnologyExists } from "./entityCreators";
 
-// Zod schemas for validation
-const MetaDataSchema = z.object({
-  D: z.string(), // Domain
-  S: z.array(z.string()).optional(), // Social links
-  C: z.string().optional(), // City
-  CAT: z.string().optional(), // Category
-  ST: z.string().optional(), // State / County
-  CO: z.string().optional(), // Country
-  Z: z.string().optional(), // Zip code
-  CN: z.string().optional(), // Company Name
-  T: z.array(z.string()).optional(), // Telephones
-  P: z
-    .array(
-      z.object({
-        Name: z.string(), // Name
-        Title: z.string(), // Title
-      })
-    )
-    .optional(), // People
-  E: z.array(z.string()).optional(), // Emails
-});
+type DomainWithStatsType = Pick<Domain, "id" | "domain"> & {
+  total_technologies: number;
+  total_spend: number;
+};
 
-const TechDataSchema = z.object({
-  D: z.string(), // Domain
-  SP: z.number(), // Spend
-  SD: z.string().optional(), // Subdomain
-  FI: z.string(), // First identified
-  LI: z.string(), // Last identified
-  T: z.array(
-    z.object({
-      N: z.string(), // Name of technology
-      FD: z.string(), // First detected
-      LD: z.string(), // Last detected
-    })
-  ),
-});
-
-const TechIndexSchema = z.object({
-  Name: z.string(),
-  Parent: z.string().optional(),
-  Premium: z.enum(["Yes", "No", "Maybe"]),
-  Description: z.string(),
-  Link: z.string(),
-  TrendsLink: z.string(),
-  Category: z.string(),
-  SubCategories: z.array(z.string()).optional(),
-  FirstAdded: z.string(),
-  Ticker: z.string().optional(),
-  Exchange: z.string().optional(),
-  PublicCompanyType: z.string().optional(),
-});
-
-type MetaDataItem = z.infer<typeof MetaDataSchema>;
-type TechDataItem = z.infer<typeof TechDataSchema>;
-type TechIndexItem = z.infer<typeof TechIndexSchema>;
+type TechsByCategoryType = Pick<Technology, "category"> & { count: number };
 
 export class DataProcessor {
   private dbSchema: DatabaseSchema;
@@ -246,9 +206,9 @@ export class DataProcessor {
       GROUP BY d.id
     `
       )
-      .all();
+      .all() as DomainWithStatsType[];
 
-    const insertStats = this.dbSchema.getDatabase().transaction((stats: any[]) => {
+    const insertStats = this.dbSchema.getDatabase().transaction((stats: DomainWithStatsType[]) => {
       for (const domain of stats) {
         // Get technologies by category for this domain
         const techsByCategory = db
@@ -261,11 +221,11 @@ export class DataProcessor {
           GROUP BY t.category
         `
           )
-          .all(domain.id);
+          .all(domain.id) as TechsByCategoryType[];
 
         const categoryCounts: Record<string, number> = {};
-        for (const cat of techsByCategory as any[]) {
-          categoryCounts[cat.category] = cat.count;
+        for (const cat of techsByCategory) {
+          if (cat.category) categoryCounts[cat.category] = cat.count;
         }
 
         this.statements.insertDomainStats.run(

@@ -8,6 +8,8 @@ import path from "path";
 import AdmZip from "adm-zip";
 import { DataProcessor } from "./lib/database/dataProcessor.js";
 
+type CountType = { count: number };
+
 const SOURCE_URL = "https://fiber-challenges.s3.us-east-1.amazonaws.com/sample-data.zip";
 const TMP_DIR = "tmp";
 const ZIP_FILE_NAME = "sample-data.zip";
@@ -113,11 +115,11 @@ async function processData(): Promise<void> {
 
     // Get some basic stats
     const db = processor.getDatabase().getDatabase();
-    const companyCount = db.prepare("SELECT COUNT(*) as count FROM domains").get() as any;
-    const techCount = db.prepare("SELECT COUNT(*) as count FROM technologies").get() as any;
+    const companyCount = db.prepare("SELECT COUNT(*) as count FROM domains").get() as CountType;
+    const techCount = db.prepare("SELECT COUNT(*) as count FROM technologies").get() as CountType;
     const relationshipCount = db
       .prepare("SELECT COUNT(*) as count FROM domain_technologies")
-      .get() as any;
+      .get() as CountType;
 
     console.log("\n📊 Database Statistics:");
     console.log(`   - Domains: ${companyCount.count}`);

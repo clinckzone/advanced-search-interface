@@ -1,3 +1,4 @@
+import { Domain, Technology } from "../types";
 import { DatabaseSchema } from "./schema";
 
 /**
@@ -7,8 +8,8 @@ import { DatabaseSchema } from "./schema";
 export function ensureDomainExists(
   domainName: string,
   statements: ReturnType<DatabaseSchema["getStatements"]>
-): any {
-  let domain = statements.getDomainByName.get(domainName) as any;
+): Domain {
+  let domain = statements.getDomainByName.get(domainName) as Domain;
   if (!domain) {
     // Create new domain entry with minimal required data
     statements.insertDomain.run(
@@ -26,7 +27,7 @@ export function ensureDomainExists(
     );
 
     // Retrieve the newly created domain
-    domain = statements.getDomainByName.get(domainName) as any;
+    domain = statements.getDomainByName.get(domainName) as Domain;
     console.log(`Created new domain entry for: ${domainName}`);
   }
   return domain;
@@ -39,8 +40,8 @@ export function ensureDomainExists(
 export function ensureTechnologyExists(
   technologyName: string,
   statements: ReturnType<DatabaseSchema["getStatements"]>
-): any {
-  let technology = statements.getTechnologyByName.get(technologyName) as any;
+): Technology {
+  let technology = statements.getTechnologyByName.get(technologyName) as Technology;
   if (!technology) {
     // Create new technology entry with minimal required data
     statements.insertTechnology.run(
@@ -59,7 +60,7 @@ export function ensureTechnologyExists(
     );
 
     // Retrieve the newly created technology
-    technology = statements.getTechnologyByName.get(technologyName) as any;
+    technology = statements.getTechnologyByName.get(technologyName) as Technology;
     console.log(`Created new technology entry for: ${technologyName}`);
   }
   return technology;
