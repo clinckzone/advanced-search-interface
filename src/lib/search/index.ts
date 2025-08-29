@@ -6,17 +6,26 @@ import type {
   TechnologyCategoryFilter,
 } from "../types/search";
 import { getDatabase } from "../database/connection";
-import {
-  Domain,
-  DomainWithTechnologies,
-  QueryBuilderOptions,
-  TechnologyDetails,
-  DomainSearchResult,
-} from "../types";
+import { Domain, DomainSearchOptions, DomainStats, Technology, DomainTechnology } from "../types";
 
 type QueryResult = {
   sql: string;
   params: any[];
+};
+
+type TechnologyDetails = Pick<Technology, "name" | "category" | "description"> &
+  Pick<DomainTechnology, "spend" | "first_detected" | "last_detected">;
+
+type DomainWithTechnologies = {
+  technologies: TechnologyDetails[];
+  technologyStats: Pick<DomainStats, "total_technologies" | "total_spend"> & {
+    technologyCategories: Record<string, number>;
+  };
+} & Domain;
+
+type DomainSearchResult = {
+  domains: DomainWithTechnologies[];
+  totalCount: number;
 };
 
 export class QueryBuilder {
@@ -32,7 +41,7 @@ export class QueryBuilder {
     this.searchParams = searchParams;
   }
 
-  public buildQuery(options: QueryBuilderOptions = {}): QueryResult {
+  public buildQuery(options: DomainSearchOptions = {}): QueryResult {
     this.reset();
     this.analyzeRequiredJoins();
     this.buildJoins();
@@ -91,7 +100,7 @@ export class QueryBuilder {
    * 3. Enriches the results with technology data
    * 4. Returns both total count and enriched domains
    */
-  public executeSearch(options: QueryBuilderOptions = {}): DomainSearchResult {
+  public executeSearch(options: DomainSearchOptions = {}): DomainSearchResult {
     try {
       const db = getDatabase();
 
@@ -444,7 +453,7 @@ export class QueryBuilder {
     }
   }
 
-  private addRangeFilter(column: string, filter: RangeFilter<number>): void {
+  private addRangeFilter(column: string, filter: RangeFilter): void {
     const conditions: string[] = [];
 
     if (filter.min !== undefined) {

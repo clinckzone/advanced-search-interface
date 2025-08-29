@@ -17,12 +17,11 @@ export const LogicalFilterSchema = <T extends z.ZodType>(itemSchema: T) =>
   });
 
 // Range filter for numeric values
-export const RangeFilterSchema = <T extends z.ZodNumber>(numSchema: T) =>
-  z.object({
-    min: numSchema.optional(),
-    max: numSchema.optional(),
-    inclusive: z.boolean().optional().default(true),
-  });
+export const RangeFilterSchema = z.object({
+  min: z.number().optional(),
+  max: z.number().optional(),
+  inclusive: z.boolean().optional().default(true),
+});
 
 // Technology category filter with count requirements
 export const TechnologyCategoryFilterSchema = z.object({
@@ -33,6 +32,14 @@ export const TechnologyCategoryFilterSchema = z.object({
   // If you use OR anywhere, you want an inclusive
   // search otherwise, you want a restrictive search
   operator: z.enum(["AND", "OR", "NOT"]).default("AND"),
+});
+
+// Schema for validating QueryBuilderOptions
+export const DomainSearchOptionsSchema = z.object({
+  limit: z.number().int().positive().optional(),
+  page: z.number().int().positive().optional(),
+  sortBy: z.string().optional(),
+  sortOrder: z.enum(["ASC", "DESC"]).optional(),
 });
 
 // Domain search schema
@@ -50,43 +57,22 @@ export const DomainSearchSchema = z.object({
   technologyCategories: z.array(TechnologyCategoryFilterSchema).optional(),
 
   // Numeric range filters
-  totalSpendRange: RangeFilterSchema(z.number()).optional(),
-  technologyCountRange: RangeFilterSchema(z.number().int()).optional(),
+  totalSpendRange: RangeFilterSchema.optional(),
+  technologyCountRange: RangeFilterSchema.optional(),
 });
 
-export type StringFilter = {
-  value: string;
-  matchType?: "exact" | "contains" | "startsWith" | "endsWith";
-  caseSensitive?: boolean;
-};
+// Domain search request schema
+export const DomainSearchRequestSchema = z.object({
+  searchParams: DomainSearchSchema,
+  options: DomainSearchOptionsSchema.optional(),
+});
 
-export type LogicalFilter<T> = {
-  include?: T[];
-  exclude?: T[];
-  requireAll?: T[];
-  isMultiValue?: boolean;
-};
+// Inferred types from Zod schemas - single source of truth
+export type StringFilter = z.infer<typeof StringFilterSchema>;
+export type LogicalFilter<T> = z.infer<ReturnType<typeof LogicalFilterSchema<z.ZodType<T>>>>;
+export type RangeFilter = z.infer<typeof RangeFilterSchema>;
+export type TechnologyCategoryFilter = z.infer<typeof TechnologyCategoryFilterSchema>;
 
-export type RangeFilter<T extends number> = {
-  min?: T;
-  max?: T;
-  inclusive?: boolean;
-};
-
-export type TechnologyCategoryFilter = {
-  category: string;
-  minCount?: number;
-  maxCount?: number;
-  operator?: "AND" | "OR" | "NOT";
-};
-
-export type DomainSearch = {
-  domain?: StringFilter;
-  companyName?: StringFilter;
-  category?: LogicalFilter<string>;
-  country?: LogicalFilter<string>;
-  technologies?: LogicalFilter<string>;
-  technologyCategories?: TechnologyCategoryFilter[];
-  totalSpendRange?: RangeFilter<number>;
-  technologyCountRange?: RangeFilter<number>;
-};
+export type DomainSearch = z.infer<typeof DomainSearchSchema>;
+export type DomainSearchOptions = z.infer<typeof DomainSearchOptionsSchema>;
+export type DomainSearchRequest = z.infer<typeof DomainSearchRequestSchema>;
