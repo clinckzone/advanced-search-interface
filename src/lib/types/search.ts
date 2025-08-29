@@ -13,6 +13,7 @@ export const LogicalFilterSchema = <T extends z.ZodType>(itemSchema: T) =>
     include: z.array(itemSchema).optional(), // OR operation - match any of these values
     exclude: z.array(itemSchema).optional(), // NOT operation - exclude all these values
     requireAll: z.array(itemSchema).optional(), // AND operation - must match all these values
+    isMultiValue: z.boolean().default(false), // Whether the field supports multiple values
   });
 
 // Range filter for numeric values
@@ -28,6 +29,9 @@ export const TechnologyCategoryFilterSchema = z.object({
   category: z.string(),
   minCount: z.number().int().min(0).optional(),
   maxCount: z.number().int().min(0).optional(),
+
+  // If you use OR anywhere, you want an inclusive
+  // search otherwise, you want a restrictive search
   operator: z.enum(["AND", "OR", "NOT"]).default("AND"),
 });
 
@@ -60,6 +64,7 @@ export type LogicalFilter<T> = {
   include?: T[];
   exclude?: T[];
   requireAll?: T[];
+  isMultiValue?: boolean;
 };
 
 export type RangeFilter<T extends number> = {
