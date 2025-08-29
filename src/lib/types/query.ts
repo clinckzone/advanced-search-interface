@@ -1,9 +1,5 @@
 import { Domain, DomainStats, DomainTechnology, Technology } from "./database";
-
-export interface QueryResult {
-  sql: string;
-  params: any[];
-}
+import { DomainSearch } from "./search";
 
 export interface QueryBuilderOptions {
   limit?: number;
@@ -15,9 +11,19 @@ export interface QueryBuilderOptions {
 export type TechnologyDetails = Pick<Technology, "name" | "category" | "description"> &
   Pick<DomainTechnology, "spend" | "first_detected" | "last_detected">;
 
-export interface DomainWithTechnologies extends Domain {
+export type DomainWithTechnologies = {
   technologies: TechnologyDetails[];
   technologyStats: Pick<DomainStats, "total_technologies" | "total_spend"> & {
     technologyCategories: Record<string, number>;
   };
-}
+} & Domain;
+
+export type DomainSearchRequest = {
+  searchParams: DomainSearch;
+  options?: QueryBuilderOptions;
+};
+
+export type DomainSearchResult = {
+  domains: DomainWithTechnologies[];
+  totalCount: number;
+};

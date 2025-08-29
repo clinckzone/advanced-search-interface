@@ -10,9 +10,14 @@ import {
   Domain,
   DomainWithTechnologies,
   QueryBuilderOptions,
-  QueryResult,
   TechnologyDetails,
+  DomainSearchResult,
 } from "../types";
+
+type QueryResult = {
+  sql: string;
+  params: any[];
+};
 
 export class QueryBuilder {
   private searchParams: DomainSearch;
@@ -79,16 +84,41 @@ export class QueryBuilder {
     return { sql, params: this.params };
   }
 
-  public executeSearch(sql: string, params: any[]): Domain[] {
+  /**
+   * Unified method that performs complete domain search with count:
+   * 1. Executes count query to get total matching domains
+   * 2. Executes search query with pagination to get domains
+   * 3. Enriches the results with technology data
+   * 4. Returns both total count and enriched domains
+   */
+  public executeSearch(options: QueryBuilderOptions = {}): DomainSearchResult {
     try {
       const db = getDatabase();
-      const stmt = db.prepare(sql);
-      const results = stmt.all(...params) as Domain[];
-      return results;
+
+      // Execute count query first
+      const { sql: countSql, params: countParams } = this.buildCountQuery();
+      const countStmt = db.prepare(countSql);
+      const countResult = countStmt.get(...countParams) as { total: number };
+      const totalCount = countResult.total || 0;
+
+      // Execute search query with pagination
+      const { sql, params } = this.buildQuery(options);
+      const searchStmt = db.prepare(sql);
+      const domains = searchStmt.all(...params) as Domain[];
+
+      // Enrich results with technology data
+      const enrichedDomains = this.enrichData(domains);
+
+      return {
+        domains: enrichedDomains,
+        totalCount,
+      };
     } catch (error) {
-      console.error("Database query execution failed:", error);
+      console.error("Domain search query failed:", error);
       throw new Error(
-        `Search execution failed: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Domain search operation failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
     }
   }
