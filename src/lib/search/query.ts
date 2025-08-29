@@ -5,18 +5,14 @@ import type {
   RangeFilter,
   TechnologyCategoryFilter,
 } from "../types/search";
-
-export interface QueryResult {
-  sql: string;
-  params: any[];
-}
-
-export interface QueryBuilderOptions {
-  limit?: number;
-  offset?: number;
-  sortBy?: string;
-  sortOrder?: "ASC" | "DESC";
-}
+import { getDatabase } from "../database/connection";
+import {
+  Domain,
+  DomainWithTechnologies,
+  QueryBuilderOptions,
+  QueryResult,
+  TechnologyDetails,
+} from "../types";
 
 export class QueryBuilder {
   private searchParams: DomainSearch;
@@ -52,8 +48,8 @@ export class QueryBuilder {
     let limitClause = "";
     if (options.limit !== undefined) {
       limitClause = `LIMIT ${options.limit}`;
-      if (options.offset !== undefined) {
-        limitClause += ` OFFSET ${options.offset}`;
+      if (options.page !== undefined) {
+        limitClause += ` OFFSET ${(options.page - 1) * options.limit}`;
       }
     }
 
@@ -81,6 +77,110 @@ export class QueryBuilder {
       .join(" ");
 
     return { sql, params: this.params };
+  }
+
+  public executeSearch(sql: string, params: any[]): Domain[] {
+    try {
+      const db = getDatabase();
+      const stmt = db.prepare(sql);
+      const results = stmt.all(...params) as Domain[];
+      return results;
+    } catch (error) {
+      console.error("Database query execution failed:", error);
+      throw new Error(
+        `Search execution failed: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+
+  public enrichData(domains: Domain[]): DomainWithTechnologies[] {
+    if (domains.length === 0) {
+      return [];
+    }
+
+    try {
+      const db = getDatabase();
+
+      // Create placeholders for domain IDs
+      const domainIds = domains.map((d) => d.id);
+      const placeholders = domainIds.map(() => "?").join(", ");
+
+      // Query to get all technologies for the domains in a single query
+      const technologiesQuery = `
+        SELECT 
+          dt.domain_id,
+          t.id,
+          t.name,
+          t.category,
+          t.is_premium,
+          t.description,
+          dt.spend,
+          dt.subdomain,
+          dt.first_identified,
+          dt.last_identified,
+          dt.first_detected,
+          dt.last_detected
+        FROM domain_technologies dt
+        JOIN technologies t ON dt.technology_id = t.id
+        WHERE dt.domain_id IN (${placeholders})
+        ORDER BY dt.domain_id, t.name
+      `;
+
+      const stmt = db.prepare(technologiesQuery);
+      const technologyResults = stmt.all(...domainIds) as any[];
+
+      // Group technologies by domain_id
+      const technologiesByDomain = new Map<number, TechnologyDetails[]>();
+
+      for (const tech of technologyResults) {
+        if (!technologiesByDomain.has(tech.domain_id)) {
+          technologiesByDomain.set(tech.domain_id, []);
+        }
+
+        const technologyDetails: TechnologyDetails = {
+          name: tech.name,
+          category: tech.category,
+          description: tech.description,
+          spend: tech.spend,
+          first_detected: tech.first_detected,
+          last_detected: tech.last_detected,
+        };
+
+        technologiesByDomain.get(tech.domain_id)!.push(technologyDetails);
+      }
+
+      // Enrich each domain with its technologies
+      return domains.map((domain) => {
+        const technologies = technologiesByDomain.get(domain.id) || [];
+
+        // Calculate statistics
+        const total_technologies = technologies.length;
+        const total_spend = technologies.reduce((sum, tech) => sum + (tech.spend || 0), 0);
+        const technologyCategories = technologies.reduce((counts, tech) => {
+          if (tech.category) {
+            counts[tech.category] = (counts[tech.category] || 0) + 1;
+          }
+          return counts;
+        }, {} as Record<string, number>);
+
+        const enrichedDomain: DomainWithTechnologies = {
+          ...domain,
+          technologies,
+          technologyStats: {
+            total_technologies,
+            total_spend,
+            technologyCategories,
+          },
+        };
+
+        return enrichedDomain;
+      });
+    } catch (error) {
+      console.error("Data enrichment failed:", error);
+      throw new Error(
+        `Data enrichment failed: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
   }
 
   private reset(): void {
