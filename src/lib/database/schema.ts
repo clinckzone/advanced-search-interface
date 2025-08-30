@@ -89,6 +89,16 @@ export class DatabaseSchema {
         FOREIGN KEY (domain_id) REFERENCES domains (id) ON DELETE CASCADE
       )
     `);
+
+    // Create indexes for dropdown filter performance
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_domains_country ON domains(country)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_domains_category ON domains(category)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_domains_company_name ON domains(company_name)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_technologies_name ON technologies(name)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_technologies_category ON technologies(category)`);
+    this.db.exec(
+      `CREATE INDEX IF NOT EXISTS idx_domain_technologies_technology_name ON domain_technologies(technology_name)`
+    );
   }
 
   public getDatabase(): Database.Database {
