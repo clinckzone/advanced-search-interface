@@ -1,0 +1,311 @@
+"use client";
+
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/app/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/app/components/ui/pagination";
+import { Badge } from "@/app/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
+
+type TechnologyDetails = {
+  name: string;
+  category: string | null;
+  description: string | null;
+  spend: number | null;
+  first_detected: string | null;
+  last_detected: string | null;
+};
+
+type DomainWithTechnologies = {
+  id: number;
+  domain: string;
+  company_name: string | null;
+  category: string | null;
+  country: string | null;
+  state: string | null;
+  city: string | null;
+  zip_code: string | null;
+  social_links: string | null;
+  emails: string | null;
+  phones: string | null;
+  people: string | null;
+  created_at: string;
+  updated_at: string;
+  technologies: TechnologyDetails[];
+  technologyStats: {
+    total_technologies: number;
+    total_spend: number;
+    technologyCategories: Record<string, number>;
+  };
+};
+
+type DomainDataTableProps = {
+  data: {
+    domains: DomainWithTechnologies[];
+    totalCount: number;
+  };
+  itemsPerPage?: number;
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
+  isLoading?: boolean;
+};
+
+export function DomainDataTable({
+  data,
+  itemsPerPage = 10,
+  currentPage = 1,
+  onPageChange,
+  isLoading = false,
+}: DomainDataTableProps) {
+  const { domains, totalCount } = data;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  // Calculate pagination range
+  const getVisiblePages = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+
+    for (
+      let i = Math.max(2, currentPage - delta);
+      i <= Math.min(totalPages - 1, currentPage + delta);
+      i++
+    ) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, "...");
+    } else {
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push("...", totalPages);
+    } else if (totalPages > 1) {
+      rangeWithDots.push(totalPages);
+    }
+
+    return rangeWithDots;
+  };
+
+  const formatCurrency = (amount: number | null) => {
+    if (!amount) return "N/A";
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const truncateText = (text: string | null, maxLength: number = 30) => {
+    if (!text) return "N/A";
+    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  };
+
+  if (!domains || domains.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-center text-muted-foreground">
+            No domains found matching your search criteria.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Search Results</span>
+            <Badge variant="secondary">
+              {totalCount} {totalCount === 1 ? "domain" : "domains"} found
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Domain</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead className="text-right">Technologies</TableHead>
+                  <TableHead className="text-right">Total Spend</TableHead>
+                  <TableHead>Top Categories</TableHead>
+                  <TableHead>Updated</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {domains.map((domain) => (
+                  <TableRow key={domain.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col">
+                        <span className="text-blue-600 hover:underline cursor-pointer">
+                          {domain.domain}
+                        </span>
+                        <span className="text-xs text-muted-foreground">ID: {domain.id}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {domain.company_name ? (
+                        <span title={domain.company_name}>
+                          {truncateText(domain.company_name, 25)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {domain.category ? (
+                        <Badge variant="outline">{domain.category}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col text-sm">
+                        {domain.country && <span>{domain.country}</span>}
+                        {domain.state && (
+                          <span className="text-muted-foreground">{domain.state}</span>
+                        )}
+                        {!domain.country && !domain.state && (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="font-medium">
+                          {domain.technologyStats.total_technologies}
+                        </span>
+                        <span className="text-xs text-muted-foreground">technologies</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="font-medium">
+                          {formatCurrency(domain.technologyStats.total_spend)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">total spend</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {Object.entries(domain.technologyStats.technologyCategories)
+                          .slice(0, 3)
+                          .map(([category, count]) => (
+                            <Badge key={category} variant="secondary" className="text-xs">
+                              {category} ({count})
+                            </Badge>
+                          ))}
+                        {Object.keys(domain.technologyStats.technologyCategories).length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{Object.keys(domain.technologyStats.technologyCategories).length - 3}{" "}
+                            more
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {formatDate(domain.updated_at)}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+              <TableCaption>
+                Showing {domains.length} of {totalCount} domains
+              </TableCaption>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {totalPages > 1 && (
+        <div className="flex justify-center">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage > 1 && onPageChange && !isLoading) {
+                      onPageChange(currentPage - 1);
+                    }
+                  }}
+                  className={currentPage <= 1 || isLoading ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+
+              {getVisiblePages().map((page, index) => (
+                <PaginationItem key={index}>
+                  {page === "..." ? (
+                    <PaginationEllipsis />
+                  ) : (
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (onPageChange && !isLoading) {
+                          onPageChange(page as number);
+                        }
+                      }}
+                      isActive={currentPage === page}
+                      className={isLoading ? "pointer-events-none opacity-50" : ""}
+                    >
+                      {page}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))}
+
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage < totalPages && onPageChange && !isLoading) {
+                      onPageChange(currentPage + 1);
+                    }
+                  }}
+                  className={
+                    currentPage >= totalPages || isLoading ? "pointer-events-none opacity-50" : ""
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+    </div>
+  );
+}
