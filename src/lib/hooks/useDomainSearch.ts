@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { DomainSearch, DomainSearchOptions } from "@/lib/types/search";
+import { DomainSearchResult } from "../types/query";
 
 export const useDomainSearch = () => {
-  const [searchResults, setSearchResults] = useState<any>(null);
+  const [searchResults, setSearchResults] = useState<DomainSearchResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [currentSearchParams, setCurrentSearchParams] = useState<DomainSearch | null>(null);
   const [currentSearchOptions, setCurrentSearchOptions] = useState<DomainSearchOptions>({
     limit: 50,
@@ -29,11 +31,13 @@ export const useDomainSearch = () => {
         throw new Error("Search failed");
       }
 
-      const results = await response.json();
-      setSearchResults(results);
+      const result = (await response.json()).data as DomainSearchResult;
+      setSearchResults(result);
+      setError(null);
     } catch (error) {
       console.error("Search error:", error);
-      setSearchResults({ error: "Search failed. Please try again." });
+      setError("Search failed. Please try again.");
+      setSearchResults(null);
     } finally {
       setIsLoading(false);
     }
@@ -64,6 +68,7 @@ export const useDomainSearch = () => {
 
   return {
     searchResults,
+    error,
     isLoading,
     currentSearchOptions,
     handleSearch,

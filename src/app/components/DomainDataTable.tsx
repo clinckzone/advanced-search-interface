@@ -21,13 +21,10 @@ import {
 } from "@/app/components/ui/pagination";
 import { Badge } from "@/app/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
-import { DomainSearchOptions, DomainWithTechnologies } from "@/lib/types";
+import { DomainSearchOptions, DomainSearchResult } from "@/lib/types";
 
 type DomainDataTableProps = {
-  data: {
-    domains: DomainWithTechnologies[];
-    totalCount: number;
-  };
+  data: DomainSearchResult;
   itemsPerPage?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
@@ -97,6 +94,7 @@ export function DomainDataTable({
   };
 
   if (!domains || domains.length === 0) {
+    console.log(domains);
     return (
       <Card>
         <CardContent className="p-6">
