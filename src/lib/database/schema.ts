@@ -93,11 +93,10 @@ export class DatabaseSchema {
     // Create indexes for dropdown filter performance
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_domains_country ON domains(country)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_domains_category ON domains(category)`);
-    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_domains_company_name ON domains(company_name)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_technologies_name ON technologies(name)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_technologies_category ON technologies(category)`);
     this.db.exec(
-      `CREATE INDEX IF NOT EXISTS idx_domain_technologies_technology_name ON domain_technologies(technology_name)`
+      `CREATE INDEX IF NOT EXISTS idx_domain_technologies_technology_id ON domain_technologies(technology_id)`
     );
   }
 
