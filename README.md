@@ -6,18 +6,13 @@ Make sure you've installed Node.js (version 22+). Then run:
 
 ```bash
 npm install
+npm run setup
 ```
 
 To run your server:
 
 ```bash
 npm run dev
-```
-
-To check that your code compiles successfully:
-
-```bash
-npm run build
 ```
 
 Then open <http://localhost:3000> to see your site.
@@ -27,6 +22,5 @@ Then open <http://localhost:3000> to see your site.
 This submission is for Divyanshu Tiwari (GitHub username = 'clinckzone').
 
 # Screenshots
-
-<img width="1466" height="794" alt="Screenshot 2025-08-30 at 1 17 57 PM" src="https://github.com/user-attachments/assets/742d748d-4d9d-4f9a-84cc-cd2ece08ddc7" />
-<img width="1415" height="695" alt="Screenshot 2025-08-30 at 1 19 01 PM" src="https://github.com/user-attachments/assets/9b8cd904-dd72-4a2c-be03-7450c8e4882d" />
+<img width="1756" height="1074" alt="Screenshot 2025-08-31 at 2 16 25 AM" src="https://github.com/user-attachments/assets/86dba8d5-cd48-4324-b896-112d4908a905" />
+<img width="1897" height="976" alt="Screenshot 2025-08-31 at 2 16 57 AM" src="https://github.com/user-attachments/assets/d326764c-6b70-4df8-abbf-6cb6543fc0c7" />
