@@ -13,6 +13,7 @@ interface DropdownOptionsContextType {
   loading: boolean;
   error: string | null;
   refreshOptions: () => Promise<void>;
+  searchTechnologies: (query: string) => Promise<string[]>;
 }
 
 const DropdownOptionsContext = createContext<DropdownOptionsContextType | undefined>(undefined);
@@ -77,6 +78,24 @@ export function DropdownOptionsProvider({ children }: { children: React.ReactNod
     };
   };
 
+  const searchTechnologies = async (query: string): Promise<string[]> => {
+    try {
+      const response = await fetch(
+        `/api/options/technologies?search=${encodeURIComponent(query)}&limit=100&offset=0`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to search technologies");
+      }
+
+      const technologies = await response.json();
+      return technologies;
+    } catch (error) {
+      console.error("Error searching technologies:", error);
+      return [];
+    }
+  };
+
   const refreshOptions = async () => {
     try {
       setLoading(true);
@@ -118,6 +137,7 @@ export function DropdownOptionsProvider({ children }: { children: React.ReactNod
     loading,
     error,
     refreshOptions,
+    searchTechnologies,
   };
 
   return (
@@ -156,6 +176,15 @@ export function useTechnologyCategories() {
   const { options, loading, error } = useDropdownOptions();
   return {
     technologyCategories: options.technologyCategories,
+    loading,
+    error,
+  };
+}
+
+export function useTechnologies() {
+  const { searchTechnologies, loading, error } = useDropdownOptions();
+  return {
+    searchTechnologies,
     loading,
     error,
   };

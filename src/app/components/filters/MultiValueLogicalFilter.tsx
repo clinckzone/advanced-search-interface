@@ -1,12 +1,120 @@
 "use client";
 
-import { X, Plus } from "lucide-react";
-import { useState, KeyboardEvent } from "react";
+import { X, Plus, ChevronDown, Loader2 } from "lucide-react";
+import { useState, KeyboardEvent, useEffect, useCallback, useRef } from "react";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/app/components/ui/dropdown-menu";
 import { LogicalFilter as LogicalFilterType } from "@/lib/types/search";
+import { useTechnologies } from "@/app/contexts/DropdownOptionsContext";
+
+interface TechnologyDropdownWithSearchProps {
+  searchTechnologies: (query: string) => Promise<string[]>;
+  selectedValue: string;
+  onSelect: (value: string) => void;
+}
+
+function TechnologyDropdownWithSearch({
+  searchTechnologies,
+  selectedValue,
+  onSelect,
+}: TechnologyDropdownWithSearchProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [options, setOptions] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Debounce search function
+  const debouncedSearch = useCallback(
+    async (query: string) => {
+      setLoading(true);
+      try {
+        const results = await searchTechnologies(query);
+        setOptions(results);
+      } catch (error) {
+        console.error("Error searching technologies:", error);
+        setOptions([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [searchTechnologies]
+  );
+
+  // Debounce effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      debouncedSearch(searchTerm);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, debouncedSearch]);
+
+  // Load initial results when dropdown opens
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setSearchTerm("");
+    } else {
+      // Load first 100 technologies when opening without search
+      debouncedSearch(searchTerm || ""); // Use space to get initial results
+    }
+  };
+
+  return (
+    <DropdownMenu onOpenChange={handleOpenChange}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" className="w-full justify-between">
+          <span className="text-gray-400">{selectedValue || "Select technology..."}</span>
+          <ChevronDown className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-[500px] h-75">
+        <div className="px-1 py-2" onSelect={(e) => e.preventDefault()}>
+          <Input
+            ref={inputRef}
+            placeholder="Search technologies..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onBlur={(e) => inputRef.current?.focus()}
+            autoFocus
+            className="h-8 shadow-none"
+          />
+        </div>
+        {loading ? (
+          <div className="flex justify-center items-center w-full h-full">
+            <Loader2 className="animate-spin" />
+          </div>
+        ) : (
+          <div className="h-60 overflow-y-scroll pt-1">
+            {options.length > 0 ? (
+              options.map((option) => (
+                <DropdownMenuItem
+                  key={option}
+                  onClick={() => onSelect(option)}
+                  className="cursor-pointer"
+                >
+                  {option}
+                </DropdownMenuItem>
+              ))
+            ) : (
+              <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                No technologies found
+              </div>
+            )}
+          </div>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 interface TagSectionProps {
   title: string;
@@ -15,6 +123,7 @@ interface TagSectionProps {
   tags: string[];
   onAddTag: (value: string) => void;
   onRemoveTag: (tag: string) => void;
+  searchTechnologies?: (query: string) => Promise<string[]>;
 }
 
 function TagSection({
@@ -24,6 +133,7 @@ function TagSection({
   tags,
   onAddTag,
   onRemoveTag,
+  searchTechnologies,
 }: TagSectionProps) {
   const [inputValue, setInputValue] = useState("");
 
@@ -35,6 +145,13 @@ function TagSection({
     }
   };
 
+  const handleDropdownSelect = (option: string) => {
+    onAddTag(option);
+    setInputValue(""); // Clear input after selection
+  };
+
+  const hasDropdownOptions = !!searchTechnologies;
+
   return (
     <div className="space-y-2">
       <div>
@@ -43,16 +160,26 @@ function TagSection({
       </div>
 
       <div className="flex gap-2">
-        <Input
-          placeholder={`Add ${title.toLowerCase()} value...`}
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="flex-1"
-        />
-        <Button type="button" size="sm" variant="outline" onClick={() => onAddTag(inputValue)}>
-          <Plus className="h-4 w-4" />
-        </Button>
+        {hasDropdownOptions ? (
+          <TechnologyDropdownWithSearch
+            searchTechnologies={searchTechnologies}
+            selectedValue={inputValue}
+            onSelect={handleDropdownSelect}
+          />
+        ) : (
+          <Input
+            placeholder={`Add ${title.toLowerCase()} value...`}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="flex-1"
+          />
+        )}
+        {!hasDropdownOptions && (
+          <Button type="button" size="sm" variant="outline" onClick={() => onAddTag(inputValue)}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {tags.length > 0 && (
@@ -84,6 +211,8 @@ interface MultiValueLogicalFilterProps {
 }
 
 export function MultiValueLogicalFilter({ label, value, onChange }: MultiValueLogicalFilterProps) {
+  const { searchTechnologies } = useTechnologies();
+
   const [localValue, setLocalValue] = useState<LogicalFilterType<string>>({
     include: value?.include || [],
     exclude: value?.exclude || [],
@@ -142,6 +271,7 @@ export function MultiValueLogicalFilter({ label, value, onChange }: MultiValueLo
           tags={localValue.include || []}
           onAddTag={(value) => addTag("include", value)}
           onRemoveTag={(tag) => removeTag("include", tag)}
+          searchTechnologies={searchTechnologies}
         />
 
         <TagSection
@@ -151,6 +281,7 @@ export function MultiValueLogicalFilter({ label, value, onChange }: MultiValueLo
           tags={localValue.exclude || []}
           onAddTag={(value) => addTag("exclude", value)}
           onRemoveTag={(tag) => removeTag("exclude", tag)}
+          searchTechnologies={searchTechnologies}
         />
 
         <TagSection
@@ -160,6 +291,7 @@ export function MultiValueLogicalFilter({ label, value, onChange }: MultiValueLo
           tags={localValue.requireAll || []}
           onAddTag={(value) => addTag("requireAll", value)}
           onRemoveTag={(tag) => removeTag("requireAll", tag)}
+          searchTechnologies={searchTechnologies}
         />
       </div>
     </div>
