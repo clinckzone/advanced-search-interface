@@ -1,5 +1,3 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/CjVP6w_a)
-
 This is Fiber AI's coding challenge.
 
 ## Setup
@@ -27,3 +25,8 @@ Then open <http://localhost:3000> to see your site.
 # Info
 
 This submission is for Divyanshu Tiwari (GitHub username = 'clinckzone').
+
+# Screenshots
+
+<img width="1466" height="794" alt="Screenshot 2025-08-30 at 1 17 57 PM" src="https://github.com/user-attachments/assets/742d748d-4d9d-4f9a-84cc-cd2ece08ddc7" />
+<img width="1415" height="695" alt="Screenshot 2025-08-30 at 1 19 01 PM" src="https://github.com/user-attachments/assets/9b8cd904-dd72-4a2c-be03-7450c8e4882d" />
