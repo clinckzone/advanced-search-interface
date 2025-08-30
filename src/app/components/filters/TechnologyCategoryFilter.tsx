@@ -21,6 +21,63 @@ import {
 import { X, Plus, ChevronDown } from "lucide-react";
 import { TechnologyCategoryFilter as TechnologyCategoryFilterType } from "@/lib/types/search";
 
+interface CategoryDropdownWithSearchProps {
+  options: string[];
+  selectedValue: string;
+  onSelect: (value: string) => void;
+}
+
+function CategoryDropdownWithSearch({
+  options,
+  selectedValue,
+  onSelect,
+}: CategoryDropdownWithSearchProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredOptions = options.filter((option) =>
+    option.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <DropdownMenu onOpenChange={(open) => !open && setSearchTerm("")}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" className="w-full justify-between">
+          <span>{selectedValue || "Select category..."}</span>
+          <ChevronDown className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-[500px] h-75">
+        <div className="px-1 py-2" onSelect={(e) => e.preventDefault()}>
+          <Input
+            placeholder="Search categories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            autoFocus
+            className="h-8 shadow-none"
+          />
+        </div>
+        <div className="h-60 overflow-y-scroll pt-1">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => (
+              <DropdownMenuItem
+                key={option}
+                onClick={() => onSelect(option)}
+                className="cursor-pointer"
+              >
+                {option}
+              </DropdownMenuItem>
+            ))
+          ) : (
+            <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+              No categories found
+            </div>
+          )}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 interface TechnologyCategoryFilterProps {
   label: string;
   value?: TechnologyCategoryFilterType[];
@@ -115,25 +172,11 @@ export function TechnologyCategoryFilter({
               <div className="col-span-2">
                 <Label className="text-xs text-muted-foreground mb-1">Category Name</Label>
                 {options ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full justify-between">
-                        <span>{filter.category || "Select category..."}</span>
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-full h-75">
-                      {options.map((option) => (
-                        <DropdownMenuItem
-                          key={option}
-                          onClick={() => updateFilter(index, "category", option)}
-                          className="cursor-pointer"
-                        >
-                          {option}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <CategoryDropdownWithSearch
+                    options={options}
+                    selectedValue={filter.category}
+                    onSelect={(option) => updateFilter(index, "category", option)}
+                  />
                 ) : (
                   <Input
                     placeholder="e.g., Analytics, E-commerce, CRM..."

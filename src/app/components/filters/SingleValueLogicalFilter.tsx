@@ -36,6 +36,7 @@ function TagSection({
   options,
 }: TagSectionProps) {
   const [inputValue, setInputValue] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -52,6 +53,11 @@ function TagSection({
   // Filter out already selected tags from options
   const availableOptions = options ? options.filter((option) => !tags.includes(option)) : [];
 
+  // Further filter based on search term
+  const filteredAvailableOptions = availableOptions.filter((option) =>
+    option.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-2">
       <div>
@@ -61,7 +67,7 @@ function TagSection({
 
       <div className="flex gap-2">
         {options ? (
-          <DropdownMenu>
+          <DropdownMenu onOpenChange={(open) => !open && setSearchTerm("")}>
             <DropdownMenuTrigger asChild disabled={disabled || availableOptions.length === 0}>
               <Button
                 variant="outline"
@@ -76,16 +82,33 @@ function TagSection({
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-full h-75">
-              {availableOptions.map((option) => (
-                <DropdownMenuItem
-                  key={option}
-                  onClick={() => handleOptionSelect(option)}
-                  className="cursor-pointer"
-                >
-                  {option}
-                </DropdownMenuItem>
-              ))}
+            <DropdownMenuContent className="w-[300px] h-75">
+              <div className="px-2 py-1.5" onSelect={(e) => e.preventDefault()}>
+                <Input
+                  placeholder={`Search ${title.toLowerCase()} values...`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  autoFocus
+                  className="h-8"
+                />
+              </div>
+              <div className="h-60 overflow-y-scroll pt-1">
+                {filteredAvailableOptions.length > 0 ? (
+                  filteredAvailableOptions.map((option) => (
+                    <DropdownMenuItem
+                      key={option}
+                      onClick={() => handleOptionSelect(option)}
+                      className="cursor-pointer"
+                    >
+                      {option}
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                    {searchTerm ? "No matching options found" : "No options available"}
+                  </div>
+                )}
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
