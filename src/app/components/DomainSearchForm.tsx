@@ -18,7 +18,9 @@ import { DomainSearch } from "@/lib/types/search";
 import { RangeFilter as RangeFilterComponent } from "./filters/RangeFilter";
 import { TechnologyCategoryFilter } from "./filters/TechnologyCategoryFilter";
 import { StringFilter as StringFilterComponent } from "./filters/StringFilter";
-import { LogicalFilter as LogicalFilterComponent } from "./filters/LogicalFilter";
+import { SingleValueLogicalFilter } from "./filters/SingleValueLogicalFilter";
+import { useDropdownOptions } from "../contexts/DropdownOptionsContext";
+import { MultiValueLogicalFilter } from "./filters/MultiValueLogicalFilter";
 
 interface DomainSearchFormProps {
   onSearch: (searchParams: DomainSearch, limit: number) => void;
@@ -28,6 +30,9 @@ interface DomainSearchFormProps {
 export function DomainSearchForm({ onSearch, isLoading = false }: DomainSearchFormProps) {
   const [searchParams, setSearchParams] = useState<DomainSearch>({});
   const [limit, setLimit] = useState<number>(50);
+
+  const { options, error, loading } = useDropdownOptions();
+  const { countries, categories, technologyCategories } = options;
 
   const handleReset = () => {
     setSearchParams({});
@@ -125,18 +130,18 @@ export function DomainSearchForm({ onSearch, isLoading = false }: DomainSearchFo
           <h3 className="text-lg font-medium">Category & Location</h3>
 
           <div className="grid md:grid-cols-2 gap-6">
-            <LogicalFilterComponent
+            <SingleValueLogicalFilter
               label="Category"
-              value={searchParams.category}
+              value={searchParams.category || { include: [], exclude: [], isMultiValue: false }}
               onChange={(value) => setSearchParams((prev) => ({ ...prev, category: value }))}
-              isMultiValue={false}
+              options={categories}
             />
 
-            <LogicalFilterComponent
+            <SingleValueLogicalFilter
               label="Country"
-              value={searchParams.country}
+              value={searchParams.country || { include: [], exclude: [], isMultiValue: false }}
               onChange={(value) => setSearchParams((prev) => ({ ...prev, country: value }))}
-              isMultiValue={false}
+              options={countries}
             />
           </div>
         </div>
@@ -148,11 +153,10 @@ export function DomainSearchForm({ onSearch, isLoading = false }: DomainSearchFo
           <h3 className="text-lg font-medium">Technology Filters</h3>
 
           <div className="space-y-6">
-            <LogicalFilterComponent
+            <MultiValueLogicalFilter
               label="Technologies"
               value={searchParams.technologies}
               onChange={(value) => setSearchParams((prev) => ({ ...prev, technologies: value }))}
-              isMultiValue={true}
             />
 
             <TechnologyCategoryFilter
