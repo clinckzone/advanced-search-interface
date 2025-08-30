@@ -20,6 +20,7 @@ import {
   PaginationPrevious,
 } from "@/app/components/ui/pagination";
 import { Badge } from "@/app/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { DomainSearchOptions, DomainSearchResult } from "@/lib/types";
 
@@ -166,12 +167,12 @@ export function DomainDataTable({
                     onSort={onSort || (() => {})}
                     align="right"
                   />
-                  <TableHead>Top Categories</TableHead>
+                  <TableHead>Top Technology Categories</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {domains.map((domain) => (
-                  <TableRow key={domain.id}>
+                  <TableRow key={domain.id} className="cursor-pointer">
                     <TableCell className="font-medium">
                       <div className="flex flex-col">
                         <span className="text-blue-600 hover:underline cursor-pointer">
@@ -233,10 +234,27 @@ export function DomainDataTable({
                             </Badge>
                           ))}
                         {Object.keys(domain.technologyStats.technologyCategories).length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{Object.keys(domain.technologyStats.technologyCategories).length - 3}{" "}
-                            more
-                          </Badge>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Badge variant="outline" className="text-xs cursor-pointer">
+                                +
+                                {Object.keys(domain.technologyStats.technologyCategories).length -
+                                  3}{" "}
+                                more
+                              </Badge>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto">
+                              <div className="flex flex-col gap-2">
+                                {Object.entries(domain.technologyStats.technologyCategories)
+                                  .slice(3)
+                                  .map(([category, count]) => (
+                                    <Badge key={category} variant="secondary" className="text-xs">
+                                      {category} ({count})
+                                    </Badge>
+                                  ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         )}
                       </div>
                     </TableCell>

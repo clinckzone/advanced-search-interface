@@ -59,7 +59,7 @@ export function SortableColumnHeader({
       <Button
         variant="ghost"
         size="sm"
-        className={`h-auto p-1 font-medium hover:bg-transparent ${getAlignmentClass()}`}
+        className={`cursor-pointer h-auto p-1 font-medium hover:bg-transparent ${getAlignmentClass()}`}
         onClick={handleSort}
       >
         <span className="mr-2">{title}</span>
