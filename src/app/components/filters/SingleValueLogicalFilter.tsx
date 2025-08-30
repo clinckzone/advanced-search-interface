@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useState, KeyboardEvent, useRef } from "react";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Badge } from "@/app/components/ui/badge";
@@ -37,6 +37,8 @@ function TagSection({
 }: TagSectionProps) {
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -85,6 +87,8 @@ function TagSection({
             <DropdownMenuContent className="w-[300px] h-75">
               <div className="px-2 py-1.5" onSelect={(e) => e.preventDefault()}>
                 <Input
+                  ref={inputRef}
+                  onBlur={(e) => inputRef.current?.focus()}
                   placeholder={`Search ${title.toLowerCase()} values...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}

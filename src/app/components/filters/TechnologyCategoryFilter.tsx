@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Button } from "@/app/components/ui/button";
@@ -33,6 +33,7 @@ function CategoryDropdownWithSearch({
   onSelect,
 }: CategoryDropdownWithSearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredOptions = options.filter((option) =>
     option.toLowerCase().includes(searchTerm.toLowerCase())
@@ -49,7 +50,9 @@ function CategoryDropdownWithSearch({
       <DropdownMenuContent className="w-[500px] h-75">
         <div className="px-1 py-2" onSelect={(e) => e.preventDefault()}>
           <Input
+            ref={inputRef}
             placeholder="Search categories..."
+            onBlur={(e) => inputRef.current?.focus()}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             autoFocus
