@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/app/components/ui/table";
+import { SortableColumnHeader } from "./SortableColumnHeader";
 import {
   Pagination,
   PaginationContent,
@@ -20,38 +21,7 @@ import {
 } from "@/app/components/ui/pagination";
 import { Badge } from "@/app/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
-
-type TechnologyDetails = {
-  name: string;
-  category: string | null;
-  description: string | null;
-  spend: number | null;
-  first_detected: string | null;
-  last_detected: string | null;
-};
-
-type DomainWithTechnologies = {
-  id: number;
-  domain: string;
-  company_name: string | null;
-  category: string | null;
-  country: string | null;
-  state: string | null;
-  city: string | null;
-  zip_code: string | null;
-  social_links: string | null;
-  emails: string | null;
-  phones: string | null;
-  people: string | null;
-  created_at: string;
-  updated_at: string;
-  technologies: TechnologyDetails[];
-  technologyStats: {
-    total_technologies: number;
-    total_spend: number;
-    technologyCategories: Record<string, number>;
-  };
-};
+import { DomainSearchOptions, DomainWithTechnologies } from "@/lib/types";
 
 type DomainDataTableProps = {
   data: {
@@ -62,6 +32,9 @@ type DomainDataTableProps = {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   isLoading?: boolean;
+  currentSortField?: string;
+  currentSortOrder?: DomainSearchOptions["sortOrder"];
+  onSort?: (field: string, order: DomainSearchOptions["sortOrder"] | null) => void;
 };
 
 export function DomainDataTable({
@@ -70,6 +43,9 @@ export function DomainDataTable({
   currentPage = 1,
   onPageChange,
   isLoading = false,
+  currentSortField,
+  currentSortOrder,
+  onSort,
 }: DomainDataTableProps) {
   const { domains, totalCount } = data;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -115,10 +91,6 @@ export function DomainDataTable({
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
   const truncateText = (text: string | null, maxLength: number = 30) => {
     if (!text) return "N/A";
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
@@ -152,14 +124,51 @@ export function DomainDataTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Domain</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead className="text-right">Technologies</TableHead>
-                  <TableHead className="text-right">Total Spend</TableHead>
+                  <SortableColumnHeader
+                    title="Domain"
+                    sortField="d.domain"
+                    currentSortField={currentSortField}
+                    currentSortOrder={currentSortOrder}
+                    onSort={onSort || (() => {})}
+                  />
+                  <SortableColumnHeader
+                    title="Company"
+                    sortField="d.company_name"
+                    currentSortField={currentSortField}
+                    currentSortOrder={currentSortOrder}
+                    onSort={onSort || (() => {})}
+                  />
+                  <SortableColumnHeader
+                    title="Category"
+                    sortField="d.category"
+                    currentSortField={currentSortField}
+                    currentSortOrder={currentSortOrder}
+                    onSort={onSort || (() => {})}
+                  />
+                  <SortableColumnHeader
+                    title="Location"
+                    sortField="d.country"
+                    currentSortField={currentSortField}
+                    currentSortOrder={currentSortOrder}
+                    onSort={onSort || (() => {})}
+                  />
+                  <SortableColumnHeader
+                    title="Technologies"
+                    sortField="ds.total_technologies"
+                    currentSortField={currentSortField}
+                    currentSortOrder={currentSortOrder}
+                    onSort={onSort || (() => {})}
+                    align="right"
+                  />
+                  <SortableColumnHeader
+                    title="Total Spend"
+                    sortField="ds.total_spend"
+                    currentSortField={currentSortField}
+                    currentSortOrder={currentSortOrder}
+                    onSort={onSort || (() => {})}
+                    align="right"
+                  />
                   <TableHead>Top Categories</TableHead>
-                  <TableHead>Updated</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -232,11 +241,6 @@ export function DomainDataTable({
                           </Badge>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {formatDate(domain.updated_at)}
-                      </span>
                     </TableCell>
                   </TableRow>
                 ))}

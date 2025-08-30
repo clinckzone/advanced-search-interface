@@ -1,3 +1,10 @@
+import {
+  Domain,
+  DomainSearchOptions,
+  DomainSearchResult,
+  DomainWithTechnologies,
+  TechnologyDetails,
+} from "../types";
 import type {
   DomainSearch,
   StringFilter,
@@ -6,26 +13,10 @@ import type {
   TechnologyCategoryFilter,
 } from "../types/search";
 import { getDatabase } from "../database/connection";
-import { Domain, DomainSearchOptions, DomainStats, Technology, DomainTechnology } from "../types";
 
 type QueryResult = {
   sql: string;
   params: any[];
-};
-
-type TechnologyDetails = Pick<Technology, "name" | "category" | "description"> &
-  Pick<DomainTechnology, "spend" | "first_detected" | "last_detected">;
-
-type DomainWithTechnologies = {
-  technologies: TechnologyDetails[];
-  technologyStats: Pick<DomainStats, "total_technologies" | "total_spend"> & {
-    technologyCategories: Record<string, number>;
-  };
-} & Domain;
-
-type DomainSearchResult = {
-  domains: DomainWithTechnologies[];
-  totalCount: number;
 };
 
 export class QueryBuilder {
@@ -44,6 +35,7 @@ export class QueryBuilder {
   public buildQuery(options: DomainSearchOptions = {}): QueryResult {
     this.reset();
     this.analyzeRequiredJoins();
+    this.analyzeRequiredJoinsForSorting(options);
     this.buildJoins();
     this.buildWhereConditions();
 
@@ -246,6 +238,13 @@ export class QueryBuilder {
     }
 
     if (this.searchParams.technologyCountRange) {
+      this.needsStatsJoin = true;
+    }
+  }
+
+  private analyzeRequiredJoinsForSorting(options: DomainSearchOptions = {}): void {
+    // Check if sorting requires stats table
+    if (options.sortBy === "ds.total_technologies" || options.sortBy === "ds.total_spend") {
       this.needsStatsJoin = true;
     }
   }
