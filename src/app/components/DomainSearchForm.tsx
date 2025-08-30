@@ -165,6 +165,7 @@ export function DomainSearchForm({ onSearch, isLoading = false }: DomainSearchFo
               onChange={(value) =>
                 setSearchParams((prev) => ({ ...prev, technologyCategories: value }))
               }
+              options={technologyCategories}
             />
           </div>
         </div>

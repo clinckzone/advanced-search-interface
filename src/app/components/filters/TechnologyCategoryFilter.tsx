@@ -12,19 +12,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
-import { X, Plus } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/app/components/ui/dropdown-menu";
+import { X, Plus, ChevronDown } from "lucide-react";
 import { TechnologyCategoryFilter as TechnologyCategoryFilterType } from "@/lib/types/search";
 
 interface TechnologyCategoryFilterProps {
   label: string;
   value?: TechnologyCategoryFilterType[];
   onChange: (value: TechnologyCategoryFilterType[] | undefined) => void;
+  options?: string[];
 }
 
 export function TechnologyCategoryFilter({
   label,
   value,
   onChange,
+  options,
 }: TechnologyCategoryFilterProps) {
   const [filters, setFilters] = useState<TechnologyCategoryFilterType[]>(
     value || [
@@ -88,32 +96,51 @@ export function TechnologyCategoryFilter({
       </div>
 
       {filters.map((filter, index) => (
-        <Card key={index} className="relative shadow-none">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">Technology Category Filter {index + 1}</CardTitle>
-              {filters.length > 1 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeFilter(index)}
-                  className="h-5 w-5 p-0 rounded-xs"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+        <Card key={index} className="relative shadow-none gap-2">
+          <CardHeader className="relative h-0">
+            {filters.length > 1 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => removeFilter(index)}
+                className="absolute right-5 top-[-10px] h-6 w-6 p-0 rounded-sm"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <Label className="text-xs text-muted-foreground mb-1">Category Name</Label>
-                <Input
-                  placeholder="e.g., Analytics, E-commerce, CRM..."
-                  value={filter.category}
-                  onChange={(e) => updateFilter(index, "category", e.target.value)}
-                />
+                {options ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between">
+                        <span>{filter.category || "Select category..."}</span>
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-full h-75">
+                      {options.map((option) => (
+                        <DropdownMenuItem
+                          key={option}
+                          onClick={() => updateFilter(index, "category", option)}
+                          className="cursor-pointer"
+                        >
+                          {option}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Input
+                    placeholder="e.g., Analytics, E-commerce, CRM..."
+                    value={filter.category}
+                    onChange={(e) => updateFilter(index, "category", e.target.value)}
+                  />
+                )}
               </div>
 
               <div>
