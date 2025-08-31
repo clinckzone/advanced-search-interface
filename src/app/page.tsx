@@ -2,7 +2,7 @@
 
 import { DomainSearchForm } from "@/app/components/DomainSearchForm";
 import { DomainDataTable } from "@/app/components/DomainDataTable";
-import { useDomainSearch } from "@/lib/hooks/useDomainSearch";
+import { useDomainSearch } from "@/app/hooks/useDomainSearch";
 import { Loader2 } from "lucide-react";
 
 export default function Home() {

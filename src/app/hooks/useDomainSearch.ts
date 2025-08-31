@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { DomainSearch, DomainSearchOptions } from "@/lib/types/search";
-import { DomainSearchResult } from "../types/query";
+import { DomainSearchResult } from "../../lib/types/query";
 
 export const useDomainSearch = () => {
   const [searchResults, setSearchResults] = useState<DomainSearchResult | null>(null);
