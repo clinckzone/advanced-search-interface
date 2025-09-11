@@ -2,6 +2,7 @@ import {
   Domain,
   DomainSearchOptions,
   DomainSearchResult,
+  DomainStats,
   DomainWithTechnologies,
   TechnologyDetails,
 } from "../types";
@@ -14,10 +15,15 @@ import type {
 } from "../types/search";
 import { getDatabase } from "../database/connection";
 
-type QueryResult = {
+type PreparedQuery = {
   sql: string;
   params: any[];
 };
+
+type RawDomain = Domain &
+  Pick<DomainStats, "total_spend" | "technologies_by_category" | "total_technologies">;
+
+type RawTechnology = TechnologyDetails & { domain_id: number };
 
 export class QueryBuilder {
   private searchParams: DomainSearch;
@@ -32,13 +38,14 @@ export class QueryBuilder {
     this.searchParams = searchParams;
   }
 
-  public buildQuery(options: DomainSearchOptions = {}): QueryResult {
+  public buildQuery(options: DomainSearchOptions = {}): PreparedQuery {
     this.reset();
     this.analyzeRequiredJoins(options);
     this.buildJoins();
     this.buildWhereConditions();
 
-    const selectClause = "SELECT d.*";
+    const selectClause =
+      "SELECT d.*, ds.total_technologies, ds.total_spend, ds.technologies_by_category";
     const fromClause = "FROM domains d";
     const joinClause = this.joins.length > 0 ? this.joins.join(" ") : "";
     const whereClause =
@@ -65,7 +72,7 @@ export class QueryBuilder {
     return { sql, params: this.params };
   }
 
-  public buildCountQuery(): QueryResult {
+  public buildCountQuery(): PreparedQuery {
     this.reset();
     this.analyzeRequiredJoins();
     this.buildJoins();
@@ -104,7 +111,7 @@ export class QueryBuilder {
       // Execute search query with pagination
       const { sql, params } = this.buildQuery(options);
       const searchStmt = db.prepare(sql);
-      const domains = searchStmt.all(...params) as Domain[];
+      const domains = searchStmt.all(...params) as RawDomain[];
 
       // Enrich results with technology data
       const enrichedDomains = this.enrichData(domains);
@@ -123,7 +130,7 @@ export class QueryBuilder {
     }
   }
 
-  public enrichData(domains: Domain[]): DomainWithTechnologies[] {
+  public enrichData(domains: RawDomain[]): DomainWithTechnologies[] {
     if (domains.length === 0) {
       return [];
     }
@@ -139,15 +146,10 @@ export class QueryBuilder {
       const technologiesQuery = `
         SELECT 
           dt.domain_id,
-          t.id,
           t.name,
           t.category,
-          t.is_premium,
           t.description,
           dt.spend,
-          dt.subdomain,
-          dt.first_identified,
-          dt.last_identified,
           dt.first_detected,
           dt.last_detected
         FROM domain_technologies dt
@@ -156,7 +158,7 @@ export class QueryBuilder {
       `;
 
       const stmt = db.prepare(technologiesQuery);
-      const technologyResults = stmt.all(...domainIds) as any[];
+      const technologyResults = stmt.all(...domainIds) as RawTechnology[];
 
       // Group technologies by domain_id
       const technologiesByDomain = new Map<number, TechnologyDetails[]>();
@@ -178,19 +180,27 @@ export class QueryBuilder {
         technologiesByDomain.get(tech.domain_id)!.push(technologyDetails);
       }
 
-      // Enrich each domain with its technologies
+      // Enrich each domain with its technologies and use pre-computed statistics
       return domains.map((domain) => {
         const technologies = technologiesByDomain.get(domain.id) || [];
 
-        // Calculate statistics
-        const total_technologies = technologies.length;
-        const total_spend = technologies.reduce((sum, tech) => sum + (tech.spend || 0), 0);
-        const technologyCategories = technologies.reduce((counts, tech) => {
-          if (tech.category) {
-            counts[tech.category] = (counts[tech.category] || 0) + 1;
+        // Use pre-computed statistics from domain_stats table
+        const total_technologies = domain.total_technologies || 0;
+        const total_spend = domain.total_spend || 0;
+
+        // Parse the pre-computed technology categories JSON
+        let technology_categories: Record<string, number> = {};
+        if (domain.technologies_by_category) {
+          try {
+            technology_categories = JSON.parse(domain.technologies_by_category);
+          } catch (error) {
+            console.warn(
+              `Failed to parse technologies_by_category for domain ${domain.id}:`,
+              error
+            );
+            technology_categories = {};
           }
-          return counts;
-        }, {} as Record<string, number>);
+        }
 
         const enrichedDomain: DomainWithTechnologies = {
           ...domain,
@@ -198,7 +208,7 @@ export class QueryBuilder {
           technologyStats: {
             total_technologies,
             total_spend,
-            technologyCategories,
+            technology_categories,
           },
         };
 
@@ -222,15 +232,8 @@ export class QueryBuilder {
   }
 
   private analyzeRequiredJoins(options: DomainSearchOptions = {}): void {
-    // Current search capabilities optionally requires a single JOIN
-    if (
-      this.searchParams.technologyCountRange ||
-      this.searchParams.totalSpendRange ||
-      options.sortBy === "ds.total_technologies" ||
-      options.sortBy === "ds.total_spend"
-    ) {
-      this.needsStatsJoin = true;
-    }
+    // Always join with domain_stats to get pre-computed statistics
+    this.needsStatsJoin = true;
   }
 
   private buildJoins(): void {

@@ -6,7 +6,7 @@ export type TechnologyDetails = Pick<Technology, "name" | "category" | "descript
 export type DomainWithTechnologies = {
   technologies: TechnologyDetails[];
   technologyStats: Pick<DomainStats, "total_technologies" | "total_spend"> & {
-    technologyCategories: Record<string, number>;
+    technology_categories: Record<string, number>;
   };
 } & Domain;
 

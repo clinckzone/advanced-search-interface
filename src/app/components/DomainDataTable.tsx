@@ -226,26 +226,26 @@ export function DomainDataTable({
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {Object.entries(domain.technologyStats.technologyCategories)
+                        {Object.entries(domain.technologyStats.technology_categories)
                           .slice(0, 3)
                           .map(([category, count]) => (
                             <Badge key={category} variant="secondary" className="text-xs">
                               {category} ({count})
                             </Badge>
                           ))}
-                        {Object.keys(domain.technologyStats.technologyCategories).length > 3 && (
+                        {Object.keys(domain.technologyStats.technology_categories).length > 3 && (
                           <Popover>
                             <PopoverTrigger asChild>
                               <Badge variant="outline" className="text-xs cursor-pointer">
                                 +
-                                {Object.keys(domain.technologyStats.technologyCategories).length -
+                                {Object.keys(domain.technologyStats.technology_categories).length -
                                   3}{" "}
                                 more
                               </Badge>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto">
                               <div className="flex flex-col gap-2">
-                                {Object.entries(domain.technologyStats.technologyCategories)
+                                {Object.entries(domain.technologyStats.technology_categories)
                                   .slice(3)
                                   .map(([category, count]) => (
                                     <Badge key={category} variant="secondary" className="text-xs">
