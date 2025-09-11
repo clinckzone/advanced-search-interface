@@ -34,8 +34,7 @@ export class QueryBuilder {
 
   public buildQuery(options: DomainSearchOptions = {}): QueryResult {
     this.reset();
-    this.analyzeRequiredJoins();
-    this.analyzeRequiredJoinsForSorting(options);
+    this.analyzeRequiredJoins(options);
     this.buildJoins();
     this.buildWhereConditions();
 
@@ -222,20 +221,14 @@ export class QueryBuilder {
     this.needsStatsJoin = false;
   }
 
-  private analyzeRequiredJoins(): void {
-    // Check if we need technology-related joins
-    if (this.searchParams.technologies || this.searchParams.totalSpendRange) {
-      this.needsDomainTechJoin = true;
-    }
-
-    if (this.searchParams.technologyCountRange) {
-      this.needsStatsJoin = true;
-    }
-  }
-
-  private analyzeRequiredJoinsForSorting(options: DomainSearchOptions = {}): void {
-    // Check if sorting requires stats table
-    if (options.sortBy === "ds.total_technologies" || options.sortBy === "ds.total_spend") {
+  private analyzeRequiredJoins(options: DomainSearchOptions = {}): void {
+    // Current search capabilities optionally requires a single JOIN
+    if (
+      this.searchParams.technologyCountRange ||
+      this.searchParams.totalSpendRange ||
+      options.sortBy === "ds.total_technologies" ||
+      options.sortBy === "ds.total_spend"
+    ) {
       this.needsStatsJoin = true;
     }
   }
@@ -287,7 +280,7 @@ export class QueryBuilder {
 
     // Total spend range filter
     if (this.searchParams.totalSpendRange) {
-      this.addRangeFilter("dt.spend", this.searchParams.totalSpendRange);
+      this.addRangeFilter("ds.total_spend", this.searchParams.totalSpendRange);
     }
 
     // Technology count range filter
