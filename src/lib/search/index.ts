@@ -285,8 +285,7 @@ export class QueryBuilder {
 
     // Technologies filter (multi-value field)
     if (this.searchParams.technologies) {
-      const techFilter = { ...this.searchParams.technologies, isMultiValue: true };
-      this.addLogicalFilter("dt.technology_name", techFilter);
+      this.addTechnologyLogicalFilter(this.searchParams.technologies);
     }
 
     // Technology categories filter
@@ -342,7 +341,7 @@ export class QueryBuilder {
   private addLogicalFilter(column: string, filter: LogicalFilter<string>): void {
     const conditions: string[] = [];
 
-    // Single-value fields: include and exclude are mutually exclusive
+    // Handle single-value fields: include and exclude are mutually exclusive
     // Meant for - "category", "country" fields
     if (!filter.isMultiValue) {
       if (filter.include && filter.include.length > 0) {
@@ -355,41 +354,53 @@ export class QueryBuilder {
         this.params.push(...filter.exclude);
       }
       // No requireAll for single-value fields as it's logically not possible
+    } else {
+      throw new Error(`Multi-value logical filtering hasn't been implemented for ${column}.`);
     }
 
-    // Multi-value fields: handle complex many-to-many relationships
-    // Meant for - "technologies" field
-    else {
-      // Include (OR operation)
-      if (filter.include && filter.include.length > 0) {
-        const placeholders = filter.include.map(() => this.getNextParam()).join(", ");
-        conditions.push(`${column} IN (${placeholders})`);
-        this.params.push(...filter.include);
-      }
+    if (conditions.length > 0) {
+      this.whereConditions.push(conditions.join(" AND "));
+    }
+  }
 
-      // Exclude (NOT operation) - use subquery for many-to-many
-      if (filter.exclude && filter.exclude.length > 0) {
-        const subquery = `d.id NOT IN (
-          SELECT DISTINCT dt2.domain_id 
-          FROM domain_technologies dt2 
-          WHERE ${column} IN (${filter.exclude.map(() => this.getNextParam()).join(", ")})
-        )`;
-        conditions.push(subquery);
-        this.params.push(...filter.exclude);
-      }
+  private addTechnologyLogicalFilter(filter: LogicalFilter<string>): void {
+    const conditions: string[] = [];
 
-      // Require All (AND operation) - use subquery with HAVING COUNT
-      if (filter.requireAll && filter.requireAll.length > 0) {
-        const subquery = `d.id IN (
-          SELECT dt3.domain_id
-          FROM domain_technologies dt3
-          WHERE ${column} IN (${filter.requireAll.map(() => this.getNextParam()).join(", ")})
-          GROUP BY dt3.domain_id
-          HAVING COUNT(DISTINCT ${column}) = ${filter.requireAll.length}
-        )`;
-        conditions.push(subquery);
-        this.params.push(...filter.requireAll);
-      }
+    // Include (OR operation) - domains that have ANY of these technologies
+    if (filter.include && filter.include.length > 0) {
+      const subquery = `d.id IN (
+        SELECT DISTINCT dt1.domain_id 
+        FROM domain_technologies dt1 
+        WHERE dt1.technology_name IN (${filter.include.map(() => this.getNextParam()).join(", ")})
+      )`;
+      conditions.push(subquery);
+      this.params.push(...filter.include);
+    }
+
+    // Exclude (NOT operation) - domains that don't have ANY of these technologies
+    if (filter.exclude && filter.exclude.length > 0) {
+      const subquery = `d.id NOT IN (
+        SELECT DISTINCT dt2.domain_id 
+        FROM domain_technologies dt2 
+        WHERE dt2.technology_name IN (${filter.exclude.map(() => this.getNextParam()).join(", ")})
+      )`;
+      conditions.push(subquery);
+      this.params.push(...filter.exclude);
+    }
+
+    // Require All (AND operation) - domains that have ALL of these technologies
+    if (filter.requireAll && filter.requireAll.length > 0) {
+      const subquery = `d.id IN (
+        SELECT dt3.domain_id
+        FROM domain_technologies dt3
+        WHERE dt3.technology_name IN (${filter.requireAll
+          .map(() => this.getNextParam())
+          .join(", ")})
+        GROUP BY dt3.domain_id
+        HAVING COUNT(DISTINCT dt3.technology_name) = ${filter.requireAll.length}
+      )`;
+      conditions.push(subquery);
+      this.params.push(...filter.requireAll);
     }
 
     if (conditions.length > 0) {
