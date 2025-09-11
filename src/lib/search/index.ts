@@ -38,7 +38,7 @@ export class QueryBuilder {
     this.buildJoins();
     this.buildWhereConditions();
 
-    const selectClause = "SELECT DISTINCT d.*";
+    const selectClause = "SELECT d.*";
     const fromClause = "FROM domains d";
     const joinClause = this.joins.length > 0 ? this.joins.join(" ") : "";
     const whereClause =
@@ -71,7 +71,7 @@ export class QueryBuilder {
     this.buildJoins();
     this.buildWhereConditions();
 
-    const selectClause = "SELECT COUNT(DISTINCT d.id) as total";
+    const selectClause = "SELECT COUNT(*) as total";
     const fromClause = "FROM domains d";
     const joinClause = this.joins.length > 0 ? this.joins.join(" ") : "";
     const whereClause =
