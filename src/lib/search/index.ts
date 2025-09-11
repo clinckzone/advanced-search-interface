@@ -224,16 +224,8 @@ export class QueryBuilder {
 
   private analyzeRequiredJoins(): void {
     // Check if we need technology-related joins
-    if (
-      this.searchParams.technologies ||
-      this.searchParams.technologyCategories ||
-      this.searchParams.totalSpendRange
-    ) {
+    if (this.searchParams.technologies || this.searchParams.totalSpendRange) {
       this.needsDomainTechJoin = true;
-    }
-
-    if (this.searchParams.technologyCategories) {
-      this.needsTechnologyJoin = true;
     }
 
     if (this.searchParams.technologyCountRange) {
@@ -412,45 +404,38 @@ export class QueryBuilder {
     const categoryConditions: string[] = [];
 
     for (const filter of filters) {
-      const conditions: string[] = [];
+      // Use unified subquery approach for all technology category filtering
+      let condition = `d.id IN (
+        SELECT dt4.domain_id
+        FROM domain_technologies dt4
+        JOIN technologies t4 ON dt4.technology_id = t4.id
+        WHERE t4.category = ${this.getNextParam()}
+        GROUP BY dt4.domain_id`;
 
-      // Basic category filter
-      conditions.push(`t.category = ${this.getNextParam()}`);
       this.params.push(filter.category);
 
-      // Count constraints
+      // Add HAVING clause only when count constraints are present
       if (filter.minCount !== undefined || filter.maxCount !== undefined) {
-        let countCondition = `d.id IN (
-          SELECT dt4.domain_id
-          FROM domain_technologies dt4
-          JOIN technologies t4 ON dt4.technology_id = t4.id
-          WHERE t4.category = ${this.getNextParam()}
-          GROUP BY dt4.domain_id
-          HAVING COUNT(*) `;
-
-        this.params.push(filter.category);
+        condition += ` HAVING COUNT(*)`;
 
         if (filter.minCount !== undefined && filter.maxCount !== undefined) {
-          countCondition += `BETWEEN ${this.getNextParam()} AND ${this.getNextParam()}`;
+          condition += ` BETWEEN ${this.getNextParam()} AND ${this.getNextParam()}`;
           this.params.push(filter.minCount, filter.maxCount);
         } else if (filter.minCount !== undefined) {
-          countCondition += `>= ${this.getNextParam()}`;
+          condition += ` >= ${this.getNextParam()}`;
           this.params.push(filter.minCount);
         } else if (filter.maxCount !== undefined) {
-          countCondition += `<= ${this.getNextParam()}`;
+          condition += ` <= ${this.getNextParam()}`;
           this.params.push(filter.maxCount);
         }
-
-        countCondition += ")";
-        conditions.push(countCondition);
       }
 
-      const combinedCondition = conditions.join(" AND ");
+      condition += ")";
 
       if (filter.operator === "NOT") {
-        categoryConditions.push(`NOT (${combinedCondition})`);
+        categoryConditions.push(`NOT (${condition})`);
       } else {
-        categoryConditions.push(`(${combinedCondition})`);
+        categoryConditions.push(`(${condition})`);
       }
     }
 
