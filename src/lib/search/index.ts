@@ -154,7 +154,6 @@ export class QueryBuilder {
         FROM domain_technologies dt
         JOIN technologies t ON dt.technology_id = t.id
         WHERE dt.domain_id IN (${placeholders})
-        ORDER BY dt.domain_id, t.name
       `;
 
       const stmt = db.prepare(technologiesQuery);
