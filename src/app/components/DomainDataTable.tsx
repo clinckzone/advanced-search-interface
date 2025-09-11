@@ -210,42 +210,35 @@ export function DomainDataTable({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-col items-end">
-                        <span className="font-medium">
-                          {domain.technologyStats.total_technologies}
-                        </span>
+                        <span className="font-medium">{domain.total_technologies}</span>
                         <span className="text-xs text-muted-foreground">technologies</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-col items-end">
-                        <span className="font-medium">
-                          {formatCurrency(domain.technologyStats.total_spend)}
-                        </span>
+                        <span className="font-medium">{formatCurrency(domain.total_spend)}</span>
                         <span className="text-xs text-muted-foreground">total spend</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {Object.entries(domain.technologyStats.technology_categories)
+                        {Object.entries(domain.technologies_by_category)
                           .slice(0, 3)
                           .map(([category, count]) => (
                             <Badge key={category} variant="secondary" className="text-xs">
                               {category} ({count})
                             </Badge>
                           ))}
-                        {Object.keys(domain.technologyStats.technology_categories).length > 3 && (
+                        {Object.keys(domain.technologies_by_category).length > 3 && (
                           <Popover>
                             <PopoverTrigger asChild>
                               <Badge variant="outline" className="text-xs cursor-pointer">
-                                +
-                                {Object.keys(domain.technologyStats.technology_categories).length -
-                                  3}{" "}
-                                more
+                                +{Object.keys(domain.technologies_by_category).length - 3} more
                               </Badge>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto">
                               <div className="flex flex-col gap-2">
-                                {Object.entries(domain.technologyStats.technology_categories)
+                                {Object.entries(domain.technologies_by_category)
                                   .slice(3)
                                   .map(([category, count]) => (
                                     <Badge key={category} variant="secondary" className="text-xs">

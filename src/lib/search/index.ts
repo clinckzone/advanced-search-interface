@@ -188,28 +188,24 @@ export class QueryBuilder {
         const total_technologies = domain.total_technologies || 0;
         const total_spend = domain.total_spend || 0;
 
-        // Parse the pre-computed technology categories JSON
-        let technology_categories: Record<string, number> = {};
+        // Parse the pre-computed technology categories string
+        let technologies_by_category: Record<string, number> = {};
         if (domain.technologies_by_category) {
           try {
-            technology_categories = JSON.parse(domain.technologies_by_category);
+            technologies_by_category = JSON.parse(domain.technologies_by_category);
           } catch (error) {
             console.warn(
               `Failed to parse technologies_by_category for domain ${domain.id}:`,
               error
             );
-            technology_categories = {};
+            technologies_by_category = {};
           }
         }
 
         const enrichedDomain: DomainWithTechnologies = {
           ...domain,
+          technologies_by_category,
           technologies,
-          technologyStats: {
-            total_technologies,
-            total_spend,
-            technology_categories,
-          },
         };
 
         return enrichedDomain;

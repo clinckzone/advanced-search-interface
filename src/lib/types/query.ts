@@ -5,10 +5,9 @@ export type TechnologyDetails = Pick<Technology, "name" | "category" | "descript
 
 export type DomainWithTechnologies = {
   technologies: TechnologyDetails[];
-  technologyStats: Pick<DomainStats, "total_technologies" | "total_spend"> & {
-    technology_categories: Record<string, number>;
-  };
-} & Domain;
+} & Pick<DomainStats, "total_technologies" | "total_spend"> & {
+    technologies_by_category: Record<string, number>;
+  } & Domain;
 
 export type DomainSearchResult = {
   domains: DomainWithTechnologies[];
