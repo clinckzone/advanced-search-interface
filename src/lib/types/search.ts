@@ -29,9 +29,8 @@ export const TechnologyCategoryFilterSchema = z.object({
   minCount: z.number().int().min(0).optional(),
   maxCount: z.number().int().min(0).optional(),
 
-  // If you use OR anywhere, you want an inclusive
-  // search otherwise, you want a restrictive search
-  operator: z.enum(["AND", "OR", "NOT"]).default("AND"),
+  // Set true if you want to exclude this category
+  exclude: z.boolean().optional().default(false),
 });
 
 // Schema for validating QueryBuilderOptions

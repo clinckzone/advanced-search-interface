@@ -5,13 +5,7 @@ import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/app/components/ui/select";
+import { Checkbox } from "@/app/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -100,7 +94,7 @@ export function TechnologyCategoryFilter({
         category: "",
         minCount: undefined,
         maxCount: undefined,
-        operator: "AND",
+        exclude: false,
       },
     ]
   );
@@ -119,7 +113,7 @@ export function TechnologyCategoryFilter({
         category: "",
         minCount: undefined,
         maxCount: undefined,
-        operator: "AND" as const,
+        exclude: false,
       },
     ];
     updateFilters(newFilters);
@@ -133,7 +127,7 @@ export function TechnologyCategoryFilter({
         category: "",
         minCount: undefined,
         maxCount: undefined,
-        operator: "AND",
+        exclude: false,
       });
     }
     updateFilters(newFilters);
@@ -224,22 +218,19 @@ export function TechnologyCategoryFilter({
               </div>
 
               <div className="col-span-2">
-                <Label className="text-xs text-muted-foreground mb-1">Operator</Label>
-                <Select
-                  value={filter.operator}
-                  onValueChange={(value: "AND" | "OR" | "NOT") =>
-                    updateFilter(index, "operator", value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="AND">AND - Must have this category</SelectItem>
-                    <SelectItem value="OR">OR - Can have this category</SelectItem>
-                    <SelectItem value="NOT">NOT - Must not have this category</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`exclude-${index}`}
+                    checked={filter.exclude}
+                    onCheckedChange={(checked) => updateFilter(index, "exclude", checked)}
+                  />
+                  <Label
+                    htmlFor={`exclude-${index}`}
+                    className="text-xs text-muted-foreground cursor-pointer"
+                  >
+                    Exclude this category
+                  </Label>
+                </div>
               </div>
             </div>
           </CardContent>

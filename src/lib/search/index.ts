@@ -424,7 +424,7 @@ export class QueryBuilder {
 
       condition += ")";
 
-      if (filter.operator === "NOT") {
+      if (filter.exclude) {
         categoryConditions.push(`NOT (${condition})`);
       } else {
         categoryConditions.push(`(${condition})`);
@@ -432,10 +432,8 @@ export class QueryBuilder {
     }
 
     if (categoryConditions.length > 0) {
-      // NOTE: If you use OR anywhere, you want an inclusive
-      // search otherwise, you want a restrictive search
-      const operator = filters.some((f) => f.operator === "OR") ? " OR " : " AND ";
-      this.whereConditions.push(`(${categoryConditions.join(operator)})`);
+      // NOTE: This filter performs a restrictive search
+      this.whereConditions.push(`(${categoryConditions.join(" AND ")})`);
     }
   }
 
