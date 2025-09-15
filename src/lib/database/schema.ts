@@ -90,14 +90,50 @@ export class DatabaseSchema {
       )
     `);
 
-    // Create indexes for dropdown filter performance
+    // INDEXES for optimized search performance
+    // Domain table indexes
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_domains_country ON domains(country)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_domains_category ON domains(category)`);
+
+    // String search indexes for case-insensitive LIKE operations
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_domains_domain_lower ON domains(LOWER(domain))`);
+    this.db.exec(
+      `CREATE INDEX IF NOT EXISTS idx_domains_company_name_lower ON domains(LOWER(company_name))`
+    );
+
+    // Sorting indexes
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_domains_created_at ON domains(created_at)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_domains_updated_at ON domains(updated_at)`);
+
+    // Essential for the always-present LEFT JOIN
+    this.db.exec(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_domain_stats_domain_id ON domain_stats(domain_id)`
+    );
+
+    // Range filtering indexes
+    this.db.exec(
+      `CREATE INDEX IF NOT EXISTS idx_domain_stats_total_spend ON domain_stats(total_spend)`
+    );
+    this.db.exec(
+      `CREATE INDEX IF NOT EXISTS idx_domain_stats_total_technologies ON domain_stats(total_technologies)`
+    );
+
+    // Indexes on domain_technologies table for technology filtering
+    this.db.exec(
+      `CREATE INDEX IF NOT EXISTS idx_domain_tech_domain_id ON domain_technologies(domain_id)`
+    );
+    this.db.exec(
+      `CREATE INDEX IF NOT EXISTS idx_domain_tech_technology_id ON domain_technologies(technology_id)`
+    );
+
+    // Essential for technology name filtering in subqueries
+    this.db.exec(
+      `CREATE INDEX IF NOT EXISTS idx_domain_tech_technology_name ON domain_technologies(technology_name)`
+    );
+
+    // Technologies table indexes
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_technologies_name ON technologies(name)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_technologies_category ON technologies(category)`);
-    this.db.exec(
-      `CREATE INDEX IF NOT EXISTS idx_domain_technologies_technology_id ON domain_technologies(technology_id)`
-    );
   }
 
   public getDatabase(): Database.Database {
